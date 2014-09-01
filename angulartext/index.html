@@ -1,0 +1,67 @@
+<!doctype html>
+<html ng-app="textEditor">
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-rc.0/angular.min.js"></script>    
+<script src='https://cdn.firebase.com/js/client/1.0.15/firebase.js'></script>
+<script src='https://cdn.firebase.com/libs/angularfire/0.8.0/angularfire.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.2.20/angular-sanitize.js'></script>
+<script src="medium.js"></script>
+        <link rel="stylesheet" href="medium.css">
+<script src="diff_match_patch.js"></script>
+    <script src="app.js"></script>
+  </head>
+  <body ng-controller="EditorController">
+  <style type="text/css">
+  #diffs, #editor, body, html {
+    height: 100%;
+  }
+  body,html {
+    background-color: white;
+    margin: 0;
+    padding: 0;
+  }
+  #diffs, #editor {
+    background-color: white;
+    padding: 15px;
+  }
+  #diffs .add{
+    color: green;
+  }
+  #diffs .del{
+    color: red;
+    text-decoration: line-through;
+  }
+  #diffs,textarea {
+    width: 100%;
+    height: 100%;
+  }
+  .buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+  }
+  .context-switcher {
+    position: fixed;
+    top: 0;
+    right: 0;
+  }
+  </style>
+      <div id="diffs" ng-bind-html="textToRender" ng-show="context == contexts[1]" ng-click="context = contexts[0]"></div>
+      <div id="editor" contenteditable ng-model="currentText" ng-show="context == contexts[0]"></div>
+      <div class="buttons">
+      <label>user</label>
+      <select ng-model="user" class="form-control" ng-init="user = users[0]">
+        <option ng-repeat="u in users">{{u}}</option>
+      </select>
+      <button ng-click="saveText()">Save</button>
+      </div>
+      <div class="context-switcher">
+      <button ng-click="context = contexts[0]" ng-show="context == contexts[1]">Edit mode</button>
+      </div>
+        <script>
+            new Medium({
+                element: document.getElementById('editor')
+            });
+        </script>
+  </body>
+</html>
