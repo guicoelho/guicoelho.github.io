@@ -5,18 +5,27 @@
 <script src='https://cdn.firebase.com/js/client/1.0.15/firebase.js'></script>
 <script src='https://cdn.firebase.com/libs/angularfire/0.8.0/angularfire.min.js'></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.2.20/angular-sanitize.js'></script>
+<script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js'></script>
 <script src="medium.js"></script>
-        <link rel="stylesheet" href="medium.css">
+<link rel="stylesheet" href="medium.css">
 <script src="diff_match_patch.js"></script>
     <script src="app.js"></script>
+    <script src="ui_for_reviewing.js"></script>
   </head>
-  <body ng-controller="EditorController">
+  <body ng-controller="EditorController" >
   <style type="text/css">
   #diffs, #editor, body, html {
     height: 100%;
   }
+  .container {
+    position: relative;
+    max-width: 860px;
+    margin: 0 auto;
+    margin-top: 100px;
+    height: 90%;
+  }
   body,html {
-    background-color: white;
+    background-color: #ddd;
     margin: 0;
     padding: 0;
   }
@@ -34,6 +43,7 @@
   #diffs,textarea {
     width: 100%;
     height: 100%;
+    background-color: #EBEBEB;
   }
   .buttons {
     position: fixed;
@@ -45,23 +55,47 @@
     top: 0;
     right: 0;
   }
+.tooltip, .arrow:after {
+  background: black;
+  border: 2px solid white;
+}
+
+.tooltip {
+  pointer-events: none;
+  opacity: 0;
+  display: inline-block;
+  position: absolute;
+  padding: 10px 20px;
+  color: white;
+  border-radius: 20px;
+  margin-top: 20px;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: 0 0 7px black;
+}
   </style>
-      <div id="diffs" ng-bind-html="textToRender" ng-show="context == contexts[1]" ng-click="context = contexts[0]"></div>
+    <div class="container" ng-init="context = contexts[0]; user = users[0]">
+      <div id="diffs" ng-bind-html="textToRender" ng-show="context == contexts[1]" ng-click="markAsReviewed()"></div>
       <div id="editor" contenteditable ng-model="currentText" ng-show="context == contexts[0]"></div>
       <div class="buttons">
       <label>user</label>
       <select ng-model="user" class="form-control" ng-init="user = users[0]">
         <option ng-repeat="u in users">{{u}}</option>
       </select>
-      <button ng-click="saveText()">Save</button>
+      <button ng-click="markForReview()">Save version</button>
       </div>
       <div class="context-switcher">
-      <button ng-click="context = contexts[0]" ng-show="context == contexts[1]">Edit mode</button>
+      <button ng-click="markAsReviewed()" ng-show="context == contexts[1];">Edit mode</button>
       </div>
+    </div>
         <script>
             new Medium({
                 element: document.getElementById('editor')
             });
+            new Medium({
+                element: document.getElementById('diffs')
+            });            
         </script>
   </body>
 </html>

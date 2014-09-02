@@ -1,73 +1,103 @@
 
 window.differ = new diff_match_patch()
-
 angular.module('textEditor', ['firebase', 'ngSanitize'])
- 
 .value('fbURL', 'https://resplendent-inferno-285.firebaseio.com/text1')
-
-  .controller('EditorController', ['$scope', '$firebase', '$sce', function($scope, $firebase, $sce) {
-    var ref = new Firebase('https://resplendent-inferno-285.firebaseio.com/text1');
-    $scope.textHistory = $firebase(ref).$asArray();
+.controller('EditorController', ['$scope', '$firebase', '$sce', function($scope, $firebase, $sce) {
+    var refLive = new Firebase('https://resplendent-inferno-285.firebaseio.com/text1/live');
+    var refVersions = new Firebase('https://resplendent-inferno-285.firebaseio.com/text1/versions');
+    $scope.textHistory = $firebase(refVersions).$asArray();
+    var liveNode = $firebase(refLive).$asObject();
+    
     $scope.users = ['John Smith', 'Sarah Parker'];
     $scope.contexts = ['Edit', 'Review'];
+    
+    // Initialize
+    refLive.once('value', function (snapshot) {
+        $scope.currentText = snapshot.val();      
+    });
+    refLive.on('value', function (snapshot) {
+      if(snapshot.getPriority() != $scope.user) {
+        $scope.currentText = snapshot.val();        
+      }      
+    });
 
-    ref.startAt('John Smith')
+    // Last version I've seen
+    refVersions.startAt('John Smith')
         .endAt('John Smith')
-        .once('value', function(snapshot){
-          var snapshotObj = snapshot.val();
-          var keys = Object.keys(snapshotObj);
-          $scope.userLastVersion = snapshotObj[keys[keys.length-1]];
+        .on('value', function(snapshot){
+          if(snapshot.val() != null) {
+            var snapshotObj = snapshot.val();
+            var keys = Object.keys(snapshotObj);
+            $scope.userLastVersion = snapshotObj[keys[keys.length-1]];            
+          }
         });
 
-    ref.limit(1).on('value', function (snapshot) {
-      var snapshotObj = snapshot.val();
-      var keys = Object.keys(snapshotObj);
+    // Latest version
+    refVersions.limit(1).on('value', function (snapshot) {
+      if(snapshot.val() != null) {
+        var snapshotObj = snapshot.val();
+        var keys = Object.keys(snapshotObj);
 
-      var lastestVersion = snapshotObj[keys[0]];
+        $scope.lastestVersionRef = new Firebase('https://resplendent-inferno-285.firebaseio.com/text1/versions/' + keys[0] + '/reviewed');
 
-      console.log(lastestVersion.content);
+        $scope.lastestVersion = snapshotObj[keys[0]];        
+      
 
-      // Only show diffs if last save is not mine
-      var diffRelevant = ($scope.user != lastestVersion.user) && lastestVersion.content != $scope.userLastVersion.content;
-      console.log(diffRelevant);
+      // Prompt review if there's a new, unreviewed version that is not mine
+      var diffRelevant = ($scope.user != $scope.lastestVersion.user) && !$scope.lastestVersion.reviewed;
       if(diffRelevant) {
-        var differences = window.differ.diff_main($scope.userLastVersion.content, lastestVersion.content);
-        console.log(differences);
-
+        var previousVersion = $scope.userLastVersion ? $scope.userLastVersion.content : '';
+        var differences = window.differ.diff_main(previousVersion, $scope.lastestVersion.content);
+        // Compute diff
         var textWithDifferences = "";
-
         differences.forEach(function(diff){
           switch(diff[0]){
             case -1:
-              textWithDifferences += "<span class='del'>" + diff[1] + "</span>";
+              textWithDifferences += "<a class='del change'>" + diff[1] + "</a>";
               break;
             case 0:
               textWithDifferences += diff[1];
               break;
             case 1:
-              textWithDifferences += "<span class='add'>" + diff[1] + "</span>";
+              textWithDifferences += "<a class='add change'>" + diff[1] + "</a>";
               break;                        
           }
         });
         $scope.textToRender = $sce.trustAsHtml(textWithDifferences);
         $scope.context = $scope.contexts[1];
+        window.initializeTooltips();
       } else {
         $scope.context = $scope.contexts[0];
       }
-      $scope.currentText = $sce.trustAsHtml(lastestVersion.content);
-
+        
+      }
     }, function (errorObject) {
       console.log('The read failed: ' + errorObject.code);
     });
 
-    $scope.saveText = function() {
-      console.log('save: ' + $scope.currentText);
-      ref.push({content: $sce.getTrustedHtml($scope.currentText), user: $scope.user}).setPriority($scope.user); 
+    $scope.updateLive = function() {
+      // Setting live version
+      console.log('LIVE: ' + $scope.currentText);
+      refLive.setWithPriority($sce.getTrustedHtml($scope.currentText), $scope.user); 
     };
 
-    $scope.hideDiff = function() {
-      $scope.showDiff = false;
-    }
+    $scope.markAsSeen = function() {
+      console.log('save: ' + $scope.currentText);
+      refVersions.push({content: $sce.getTrustedHtml($scope.currentText), user: $scope.user, reviewed: 1}).setPriority($scope.user); 
+    };  
+
+    $scope.markForReview = function() {
+      console.log('save: ' + $scope.currentText);
+      refVersions.push({content: $sce.getTrustedHtml($scope.currentText), user: $scope.user}).setPriority($scope.user); 
+    };  
+
+    $scope.markAsReviewed = function() {
+      $scope.lastestVersionRef.set(1);
+      $scope.context = $scope.contexts[0];
+      $scope.markAsSeen();
+      console.log($scope.lastestVersionRef);
+      window.hideTooltips();
+    };
     // var myVar = setInterval(function(){
     //   $scope.saveText();
 
@@ -84,13 +114,18 @@ angular.module('textEditor', ['firebase', 'ngSanitize'])
 
       // Specify how UI should be updated
       ngModel.$render = function() {
-        element.html($sce.getTrustedHtml(ngModel.$viewValue || ''));
+        element.html($sce.getTrustedHtml(ngModel.$viewValue) || '');
       };
 
       // Listen for change events to enable binding
-      element.on('blur keyup change', function() {
+      // element.on('blur keyup change', function() {
+      //   scope.$apply(read);
+      // });
+      element.on('keyup', function(){
         scope.$apply(read);
+        scope.updateLive();
       });
+
       read(); // initialize
 
       // Write data to the model
