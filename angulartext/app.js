@@ -117,10 +117,10 @@ angular.module('textEditor', ['firebase', 'ngSanitize'])
         element.html($sce.getTrustedHtml(ngModel.$viewValue) || '');
       };
 
-      // Listen for change events to enable binding
-      // element.on('blur keyup change', function() {
-      //   scope.$apply(read);
-      // });
+      Listen for change events to enable binding
+      element.on('blur change', function() {
+        scope.$apply(read);
+      });
       element.on('keyup', function(){
         scope.$apply(read);
         scope.updateLive();
