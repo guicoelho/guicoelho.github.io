@@ -117,7 +117,7 @@ angular.module('textEditor', ['firebase', 'ngSanitize'])
         element.html($sce.getTrustedHtml(ngModel.$viewValue) || '');
       };
 
-      Listen for change events to enable binding
+      //Listen for change events to enable binding
       element.on('blur change', function() {
         scope.$apply(read);
       });
