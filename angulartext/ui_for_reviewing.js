@@ -37,19 +37,22 @@
     document.onkeydown = checkKey;
 
     function checkKey(e) {
-
-        // Prevent default behavior
-        e.stopPropagation();
-        e.preventDefault();  
-        e.returnValue = false;
-        e.cancelBubble = true;
-
         e = e || window.event;
 
         if (e.keyCode == '38') {
+            // Prevent default behavior
+            e.stopPropagation();
+            e.preventDefault();  
+            e.returnValue = false;
+            e.cancelBubble = true;
             focusPrevious();
         }
         else if (e.keyCode == '40') {
+            // Prevent default behavior
+            e.stopPropagation();
+            e.preventDefault();  
+            e.returnValue = false;
+            e.cancelBubble = true;
             focusNext();
         }
     }    
