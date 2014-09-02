@@ -46,7 +46,12 @@ angular.module('textEditor', ['firebase', 'ngSanitize'])
       // Prompt review if there's a new, unreviewed version that is not mine
       var diffRelevant = ($scope.user != $scope.lastestVersion.user) && !$scope.lastestVersion.reviewed;
       if(diffRelevant) {
-        var previousVersion = $scope.userLastVersion ? $scope.userLastVersion.content : '';
+        if(typeof($scope.userLastVersion) != 'undefined'){
+          var previousVersion = $scope.userLastVersion.content;
+        } else {
+          var previousVersion = "";
+        }
+        
         var differences = window.differ.diff_main(previousVersion, $scope.lastestVersion.content);
         // Compute diff
         var textWithDifferences = "";
